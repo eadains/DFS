@@ -175,3 +175,13 @@ CREATE TABLE PlayerStats (
     PitchingWalksPerNineInnings,
     PitchingWeightedOnBasePercentage
 );
+
+CREATE TABLE Slate (
+    Date,
+    GameID REFERENCES Games(GameID),
+    PlayerID REFERENCES Players(PlayerID),
+    TeamID REFERENCES Teams(TeamID),
+    Name,
+    Position,
+    Salary
+);
