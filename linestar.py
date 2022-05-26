@@ -14,8 +14,10 @@ def extract_row_data(row, dtype="current"):
             # at the start, so strip that
             "Team": cells[5].find(class_="playerTeam").text[-3:].strip(),
             "Opponent": cells[13].text,
+            "Order": cells[15].text,
             "Salary": cells[9].text,
             "Projection": cells[10].find("input").get("value"),
+            "pOwn": cells[24].text,
         }
     elif dtype == "historical":
         # TODO: get points actually scored
@@ -32,12 +34,12 @@ def extract_row_data(row, dtype="current"):
             "Time": cells[13].text,
             "Opponent": cells[14].text,
             "Order": cells[16].text,
-            "Bat/Arm": cells[17].text,
+            "Bat_Arm": cells[17].text,
             "Consistent": cells[18].text,
             "Floor": cells[19].text,
             "Ceiling": cells[20].text,
-            "Avg FP": cells[22].text,
-            "Imp Runs": cells[23].text,
+            "Avg_FP": cells[22].text,
+            "Imp_Runs": cells[23].text,
             "pOwn": cells[25].text,
             "actOwn": cells[26].text,
             "Leverage": cells[27].text,
@@ -100,10 +102,33 @@ def get_historical_data(date):
     data["Projection"] = data["Projection"].astype(float)
     data["Scored"] = data["Scored"].astype(float)
     data[["pOwn", "actOwn"]] = (
-        data[["pOwn", "actOwn"]].replace("[\%]", "", regex=True).astype(float)
+        data[["pOwn", "actOwn"]].replace("[\%]", "", regex=True).astype(float) / 100
     )
     data["Position"] = data["Position"].str.split("/", expand=True)[0]
     # Replace players with no batting order with NaN
     data["Order"] = data["Order"].replace({"-": np.nan})
+    data["Order"] = data["Order"].astype(float)
     data["Game"] = make_game_strings(data)
+    data["Opp_Pitcher"] = data.loc[data["Position"] != "P", "Opponent"].str.split(
+        ",", expand=True
+    )[0]
+    return data
+
+
+def get_proj_data():
+    data = extract_linestar_data("proj.mhtml")
+    # Remove (R) and (L) from pitcher names
+    data.loc[data["Position"] == "P", "Player"] = data.loc[
+        data["Position"] == "P", "Player"
+    ].str[:-4]
+    data["Salary"] = data["Salary"].replace("[\$,]", "", regex=True).astype(int)
+    data["Projection"] = data["Projection"].astype(float)
+    data["pOwn"] = data["pOwn"].replace("[\%]", "", regex=True).astype(float) / 100
+    data["Position"] = data["Position"].str.split("/", expand=True)[0]
+    data["Order"] = data["Order"].replace({"-": np.nan})
+    data["Order"] = data["Order"].astype(float)
+    data["Game"] = make_game_strings(data)
+    data["Opp_Pitcher"] = data.loc[data["Position"] != "P", "Opponent"].str.split(
+        ",", expand=True
+    )[0]
     return data
